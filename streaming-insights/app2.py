@@ -77,7 +77,7 @@ st.caption(f"Loaded data: {data_source_label}")
 #-----------------------------------------------------------
 va["day"] = pd.to_datetime(va["date"]).dt.date
 
-# Top-row: filters + KPIs
+#filters + KPIs
 filters = st.columns([1.2, 1.2, 1.2, 1.5, 1, 1, 1])
 with filters[0]:
     min_d, max_d = va["day"].min(), va["day"].max()
@@ -93,7 +93,17 @@ with filters[3]:
         data=va.to_csv(index=False).encode(),
         file_name="viewing_activity.csv", mime="text/csv")
 
-start_d, end_d = (date_range if isinstance(date_range, tuple) else (date_range, date_range))
+val = date_range
+if isinstance(val, (list, tuple)):
+    if len(val) >= 2 and val[0] and val[1]:
+        start_d, end_d = val[0], val[1]
+    elif len(val) >= 1 and val[0]:
+        start_d = end_d = val[0]
+    else:
+        start_d = end_d = min_d
+else:
+    start_d = end_d = val
+    
 mask = (va["day"] >= start_d) & (va["day"] <= end_d)
 if sel_genres: mask &= va["genre"].isin(sel_genres)
 if sel_region != "All": mask &= (va["region"] == sel_region)
