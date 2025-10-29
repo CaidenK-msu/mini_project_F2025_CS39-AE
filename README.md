@@ -1,6 +1,11 @@
 # Streaming Platform insight Dashboard
+
+Mini-Project (Lab 4.3):
+
 Author: Caiden Kopcik
+
 App URL: https://miniprojectf2025cs39-ae-jfasnjsvxu3c8mjahbqzmz.streamlit.app/
+
 github Repo link: https://github.com/CaidenK-msu/mini_project_F2025_CS39-AE 
 
 # Overview
