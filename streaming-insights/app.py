@@ -18,29 +18,28 @@ st.caption(
 
 #Safe Data Loader
 #-----------------------------------------------------------
-@st.cache_data
+BASE_DIR = Path(__file__).resolve().parent
+
 def load_data():
-    """Loads viewing and catalog data safely and clearly."""
-    try:
-        va_path = "data/viewing_activity.csv"
-        cat_path = "data/content_catalog.csv"
+    """Load CSVs relative to app.py so it works regardless of working dir."""
+    va_path = BASE_DIR / "data" / "viewing_activity.csv"
+    cat_path = BASE_DIR / "data" / "content_catalog.csv"
 
-        #verify
-        if not os.path.exists(va_path):
-            raise FileNotFoundError(f"Missing file: {va_path}")
-        if not os.path.exists(cat_path):
-            raise FileNotFoundError(f"Missing file: {cat_path}")
+    if not va_path.exists():
+        # Helpful diagnostics if something is off on Streamlit Cloud
+        here = Path.cwd()
+        known_csvs = "\n".join(f" - {p}" for p in here.rglob("*.csv"))
+        raise FileNotFoundError(
+            f"Missing file: {va_path}\n\n"
+            f"Current working dir: {here}\n"
+            f"CSV files I CAN see:\n{known_csvs or ' (none)'}"
+        )
+    if not cat_path.exists():
+        raise FileNotFoundError(f"Missing file: {cat_path}")
 
-        va = pd.read_csv(va_path, parse_dates=["date"])
-        cat = pd.read_csv(cat_path)
-        return va, cat, va_path, cat_path
-
-    except Exception as e:
-        st.error(f"⚠️ Could not load data: {e}")
-        st.stop()
-
-va, catalog, va_path, cat_path = load_data()
-st.caption(f"Loaded: `{va_path}` and `{cat_path}`")
+    va = pd.read_csv(va_path, parse_dates=["date"])
+    cat = pd.read_csv(cat_path)
+    return va, cat, str(va_path), str(cat_path)
 
 #Data prep
 #-----------------------------------------------------------
