@@ -28,7 +28,7 @@ def make_demo_data(n_users=500, days=60, seed=7):
 
     rows = []
     for d in dates:
-        # simulate active users that day
+        #simulate active users that day
         active_count = rng.integers(n_users//6, n_users//3)
         actives = rng.choice(np.arange(1, n_users+1), size=active_count, replace=False)
         for u in actives:
