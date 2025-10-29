@@ -93,6 +93,7 @@ with filters[3]:
         data=va.to_csv(index=False).encode(),
         file_name="viewing_activity.csv", mime="text/csv")
 
+#Fix data changing error
 val = date_range
 if isinstance(val, (list, tuple)):
     if len(val) >= 2 and val[0] and val[1]:
