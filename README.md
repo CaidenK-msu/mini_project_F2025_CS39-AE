@@ -28,3 +28,13 @@ Visuals & KPIs:
 Data Handling:
 - Reads mainly from local CSV (data/viewing_activity.csv)
 - Auto-generates synthetic data for any date range when no local data exist
+
+# Resource(s) used for help:
+ChatGPT
+  https://chatgpt.com/
+
+(n.d.). Streamlit Docs. 
+  https://docs.streamlit.io/
+
+(n.d.). Vega-Altair: Declarative Visualization in Python — Vega-Altair 5.5.0 documentation. 
+  https://altair-viz.github.io/
