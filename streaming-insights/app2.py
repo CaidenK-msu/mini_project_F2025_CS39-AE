@@ -5,9 +5,8 @@ import altair as alt
 import pydeck as pdk
 from pathlib import Path
 
-# -----------------------------------------------------------
-# Page setup
-# -----------------------------------------------------------
+#Page setup
+#-----------------------------------------------------------
 st.set_page_config(page_title="Streaming Platform Insights", page_icon="📺", layout="wide")
 st.title("Streaming Platform Insights")
 st.caption(
@@ -17,9 +16,8 @@ st.caption(
 
 BASE_DIR = Path(__file__).resolve().parent
 
-# -----------------------------------------------------------
-# Option (2): richer synthetic dataset generator
-# -----------------------------------------------------------
+#richer synthetic dataset generator
+#-----------------------------------------------------------
 def make_demo_data(n_users=500, days=60, seed=7):
     rng = np.random.default_rng(seed)
     start = pd.Timestamp.today().normalize() - pd.Timedelta(days=days)
@@ -42,9 +40,8 @@ def make_demo_data(n_users=500, days=60, seed=7):
     df = pd.DataFrame(rows, columns=["date","user_id","region","device","genre","watch_time_minutes"])
     return df
 
-# -----------------------------------------------------------
-# Data loading
-# -----------------------------------------------------------
+#Data loading
+#-----------------------------------------------------------
 @st.cache_data
 def load_local():
     va_path = BASE_DIR / "data" / "viewing_activity.csv"
@@ -53,7 +50,7 @@ def load_local():
     cat = pd.read_csv(cat_path)
     return va, cat, str(va_path), str(cat_path)
 
-# Sidebar controls for dataset choice (2)
+#Sidebar controls for dataset choice
 with st.sidebar:
     st.subheader("Data Source")
     use_demo = st.toggle("Use demo dataset (richer & diverse)", value=False)
@@ -76,9 +73,8 @@ else:
 
 st.caption(f"Loaded data: {data_source_label}")
 
-# -----------------------------------------------------------
-# Prep
-# -----------------------------------------------------------
+#Prep
+#-----------------------------------------------------------
 va["day"] = pd.to_datetime(va["date"]).dt.date
 
 # Top-row: filters + KPIs
@@ -112,7 +108,7 @@ with k3: st.metric("Top Genre", f.groupby("genre")["watch_time_minutes"].sum().i
 
 st.markdown("---")
 
-# Middle row: line chart + colored map (3)
+#line chart + colored map 
 left, right = st.columns([1.4, 1.0])
 
 with left:
@@ -148,7 +144,7 @@ with right:
     region_agg["lon"] = region_agg["region"].map(lambda r: region_coords.get(r, (0, 0))[1])
     region_agg["watch_hours"] = region_agg["watch_time_minutes"] / 60
 
-    # --- (3) Colorful bubbles ---
+    #--- Colorful bubbles ---
     max_h = float(region_agg["watch_hours"].max() or 1)
     scale = color_intensity
     region_agg["r"] = ((region_agg["watch_hours"]/max_h) * 40 * scale + 30).clip(0, 255)
@@ -177,7 +173,7 @@ with right:
 
 st.markdown("---")
 
-# Bottom row: summary + table
+#summary + table
 left2, right2 = st.columns([1.4, 1.0])
 with left2:
     st.subheader("Hot Genres & Times Summary")
