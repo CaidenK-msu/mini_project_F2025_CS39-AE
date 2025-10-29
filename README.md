@@ -32,12 +32,12 @@ Data Handling:
 # Resource(s) used for help:
 ChatGPT
   
-    https://chatgpt.com/
+  https://chatgpt.com/
 
 (n.d.). Streamlit Docs. 
   
-    https://docs.streamlit.io/
+  https://docs.streamlit.io/
 
 (n.d.). Vega-Altair: Declarative Visualization in Python — Vega-Altair 5.5.0 documentation. 
   
-    https://altair-viz.github.io/
+  https://altair-viz.github.io/
