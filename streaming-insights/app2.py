@@ -16,9 +16,10 @@ st.caption(
 
 BASE_DIR = Path(__file__).resolve().parent
 
-#richer synthetic dataset generator
+#Synthetic dataset generators
 #-----------------------------------------------------------
 def make_demo_data(n_users=500, days=60, seed=7):
+    """Prebuilt rich dataset spanning the last `days` days."""
     rng = np.random.default_rng(seed)
     start = pd.Timestamp.today().normalize() - pd.Timedelta(days=days)
     dates = pd.date_range(start, periods=days, freq="D")
@@ -28,7 +29,6 @@ def make_demo_data(n_users=500, days=60, seed=7):
 
     rows = []
     for d in dates:
-        #simulate active users that day
         active_count = rng.integers(n_users//6, n_users//3)
         actives = rng.choice(np.arange(1, n_users+1), size=active_count, replace=False)
         for u in actives:
@@ -37,6 +37,29 @@ def make_demo_data(n_users=500, days=60, seed=7):
             genre  = rng.choice(genres,  p=[0.26,0.22,0.20,0.12,0.12,0.08])
             wt     = max(5, int(rng.normal(46, 22)))  # minutes
             rows.append((d, f"u{u:04d}", region, device, genre, wt))
+    df = pd.DataFrame(rows, columns=["date","user_id","region","device","genre","watch_time_minutes"])
+    return df
+
+def make_demo_data_for_range(start_d, end_d, n_users=800, seed=11):
+    """Generate *just-in-time* synthetic rows for any chosen date range."""
+    rng = np.random.default_rng(seed)
+    dates = pd.date_range(pd.to_datetime(start_d), pd.to_datetime(end_d), freq="D")
+    regions = ["North America","Europe","Asia","South America","Africa","Oceania"]
+    devices = ["TV","Mobile","Desktop"]
+    genres  = ["Drama","Comedy","Action","Documentary","Sci-Fi","Reality"]
+
+    rows = []
+    for d in dates:
+        dow   = d.dayofweek
+        base  = 40 + (10 if dow in (4,5) else 0)  # Fri/Sat bump
+        #simulate “sessions” per day
+        for _ in range(rng.integers(250, 500)):
+            region = rng.choice(regions, p=[0.32,0.25,0.25,0.07,0.06,0.05])
+            device = rng.choice(devices, p=[0.55,0.30,0.15])
+            genre  = rng.choice(genres,  p=[0.26,0.22,0.20,0.12,0.12,0.08])
+            wt     = max(5, int(rng.normal(base, 18)))
+            uid    = f"u{rng.integers(1, n_users+1):04d}"
+            rows.append((d.normalize(), uid, region, device, genre, wt))
     df = pd.DataFrame(rows, columns=["date","user_id","region","device","genre","watch_time_minutes"])
     return df
 
