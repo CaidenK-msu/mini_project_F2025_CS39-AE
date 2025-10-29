@@ -134,7 +134,7 @@ if isinstance(val, (list, tuple)):
     elif len(val) >= 1 and val[0]:
         start_d = end_d = val[0]
     else:
-        start_d = end_d = min_d
+        start_d = end_d = data_min
 else:
     start_d = end_d = val
     
