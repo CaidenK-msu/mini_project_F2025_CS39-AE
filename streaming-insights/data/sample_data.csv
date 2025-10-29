@@ -1,0 +1,13 @@
+date,user_id,region,device,genre,watch_time_minutes
+2025-09-01,u01,North America,TV,Drama,42
+2025-09-01,u02,Europe,Mobile,Comedy,35
+2025-09-01,u03,North America,Desktop,Action,51
+2025-09-02,u01,North America,TV,Drama,38
+2025-09-02,u04,Asia,Mobile,Drama,22
+2025-09-02,u05,Europe,TV,Comedy,44
+2025-09-03,u02,Europe,Mobile,Comedy,29
+2025-09-03,u03,North America,Desktop,Action,60
+2025-09-03,u06,North America,TV,Documentary,33
+2025-09-04,u07,Asia,Mobile,Drama,25
+2025-09-04,u01,North America,TV,Comedy,18
+2025-09-05,u02,Europe,Mobile,Drama,40
