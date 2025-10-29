@@ -80,8 +80,18 @@ va["day"] = pd.to_datetime(va["date"]).dt.date
 #filters + KPIs
 filters = st.columns([1.2, 1.2, 1.2, 1.5, 1, 1, 1])
 with filters[0]:
-    min_d, max_d = va["day"].min(), va["day"].max()
-    date_range = st.date_input("Date", (min_d, max_d), min_value=min_d, max_value=max_d)
+    
+    #Allow more range in data change
+    data_min, data_max = va["day"].min(), va["day"].max()
+    ui_min = (pd.to_datetime(data_min) - pd.Timedelta(days=90)).date()
+    ui_max = (pd.to_datetime(data_max) + pd.Timedelta(days=90)).date()
+    date_range = st.date_input(
+        "Date",
+        (data_min, data_max),
+        min_value=ui_min,
+        max_value=ui_max
+    )
+
 with filters[1]:
     genres = sorted(va["genre"].unique())
     sel_genres = st.multiselect("Genre", genres, default=genres)
