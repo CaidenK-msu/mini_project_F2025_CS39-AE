@@ -3,8 +3,11 @@ import pandas as pd
 import numpy as np
 import altair as alt
 import pydeck as pdk
+import os
 from datetime import date
 
+#Page setup
+#-----------------------------------------------------------
 st.set_page_config(page_title="Streaming Platform Insights", page_icon="📺", layout="wide")
 st.title("Streaming Platform Insights")
 
@@ -13,18 +16,42 @@ st.caption(
     "a regional map of watch time, a summary text panel, and a Top-10 table."
 )
 
-#---------- Data ----------
+#Safe Data Loader
+#-----------------------------------------------------------
 @st.cache_data
 def load_data():
-    va = pd.read_csv("data/viewing_activity.csv", parse_dates=["date"])
-    cat = pd.read_csv("data/content_catalog.csv")
-    return va, cat
+    """Loads viewing and catalog data safely and clearly."""
+    try:
+        va_path = "data/viewing_activity.csv"
+        cat_path = "data/content_catalog.csv"
 
-va, catalog = load_data()
+        #verify
+        if not os.path.exists(va_path):
+            raise FileNotFoundError(f"Missing file: {va_path}")
+        if not os.path.exists(cat_path):
+            raise FileNotFoundError(f"Missing file: {cat_path}")
+
+        va = pd.read_csv(va_path, parse_dates=["date"])
+        cat = pd.read_csv(cat_path)
+        return va, cat, va_path, cat_path
+
+    except Exception as e:
+        st.error(f"⚠️ Could not load data: {e}")
+        st.stop()
+
+va, catalog, va_path, cat_path = load_data()
+st.caption(f"Loaded: `{va_path}` and `{cat_path}`")
+
+#Data prep
+#-----------------------------------------------------------
 va["day"] = va["date"].dt.date
 
-#---------- Top row: filters (left) + KPI cards ----------
-filter_cols = st.columns([1.1, 1.1, 1.2, 1.6, 1.0, 1.0, 1.0])  # control spacing
+# Top Row – Filters + KPIs
+#-----------------------------------------------------------
+filter_cols = st.columns([1.1, 1.1, 1.2, 1.6, 1.0, 1.0, 1.0])
+
+#Filters
+#-----------------------------------------------------------
 with filter_cols[0]:
     min_d, max_d = va["day"].min(), va["day"].max()
     date_range = st.date_input("Date", value=(min_d, max_d), min_value=min_d, max_value=max_d)
@@ -35,7 +62,7 @@ with filter_cols[2]:
     regions = ["All"] + sorted(va["region"].unique().tolist())
     sel_region = st.selectbox("Region", regions)
 with filter_cols[3]:
-    st.write("")  # vertical nudge
+    st.write("")  # spacing
     st.download_button(
         "Download Viewer Data",
         data=va.to_csv(index=False).encode(),
@@ -43,10 +70,7 @@ with filter_cols[3]:
         mime="text/csv"
     )
 
-#KPIs on the right
-k1, k2, k3 = filter_cols[4], filter_cols[5], filter_cols[6]
-
-#---------- Filtering ----------
+# Filtered data
 start_d, end_d = (date_range if isinstance(date_range, tuple) else (date_range, date_range))
 mask = (va["day"] >= start_d) & (va["day"] <= end_d)
 if sel_genres:
@@ -56,10 +80,11 @@ if sel_region != "All":
 f = va.loc[mask].copy()
 
 if f.empty:
-    st.warning("No data for the selected filters.")
+    st.warning("No data for selected filters.")
     st.stop()
 
-#KPI metrics
+#KPI Cards
+k1, k2, k3 = filter_cols[4], filter_cols[5], filter_cols[6]
 with k1:
     active_users = f["user_id"].nunique()
     st.metric("Subscribers", f"{active_users:,}")
@@ -72,7 +97,8 @@ with k3:
 
 st.markdown("---")
 
-#---------- Watch Hours + World Map ----------
+#Middle Row – Watch Hours Chart + Map
+#-----------------------------------------------------------
 left, right = st.columns([1.4, 1.0])
 
 with left:
@@ -83,21 +109,27 @@ with left:
         .reset_index()
         .rename(columns={"watch_time_minutes": "watch_minutes"})
     )
-    #minutes -> hours to match wireframe vibe
     daily["watch_hours"] = daily["watch_minutes"] / 60.0
 
-    line = alt.Chart(daily, title="Total watch hours by day").mark_area(line=True).encode(
-        x=alt.X("day:T", title="Date"),
-        y=alt.Y("watch_hours:Q", title="Watch hours"),
-        tooltip=[alt.Tooltip("day:T", title="Date"),
-                 alt.Tooltip("watch_hours:Q", title="Watch hours", format=".2f")]
-    ).properties(height=320)
-    st.altair_chart(line.interactive(), use_container_width=True)
+    chart = (
+        alt.Chart(daily, title="Total watch hours by day")
+        .mark_area(line=True)
+        .encode(
+            x=alt.X("day:T", title="Date"),
+            y=alt.Y("watch_hours:Q", title="Watch hours"),
+            tooltip=[
+                alt.Tooltip("day:T", title="Date"),
+                alt.Tooltip("watch_hours:Q", title="Watch hours", format=".2f"),
+            ],
+        )
+        .properties(height=320)
+    )
+    st.altair_chart(chart.interactive(), use_container_width=True)
     st.caption("Alt text: Area chart of total watch hours per day; zoom/hover to explore.")
 
 with right:
     st.subheader("World Map (Watch Hours)")
-    #Minimal region centroids
+    #approximate region coordinates
     region_coords = {
         "North America": (39.8, -98.6),
         "Europe": (54.5, 15.3),
@@ -107,7 +139,9 @@ with right:
         "Oceania": (-25.3, 133.8),
     }
     region_agg = (
-        f.groupby("region")["watch_time_minutes"].sum().reset_index()
+        f.groupby("region")["watch_time_minutes"]
+        .sum()
+        .reset_index()
         .rename(columns={"watch_time_minutes": "watch_minutes"})
     )
     region_agg["lat"] = region_agg["region"].map(lambda r: region_coords.get(r, (0, 0))[0])
@@ -119,17 +153,24 @@ with right:
         "ScatterplotLayer",
         data=region_agg,
         get_position="[lon, lat]",
-        get_radius="watch_hours * 200000",  # scales bubble by hours
+        get_radius="watch_hours * 200000",
         radius_min_pixels=4,
         pickable=True,
     )
-    st.pydeck_chart(pdk.Deck(map_style=None, initial_view_state=view_state, layers=[layer],
-                             tooltip={"text": "{region}\nWatch hours: {watch_hours}"}))
-    st.caption("Alt text: Bubble map sizing each region by total watch hours.")
+    st.pydeck_chart(
+        pdk.Deck(
+            map_style=None,
+            initial_view_state=view_state,
+            layers=[layer],
+            tooltip={"text": "{region}\nWatch hours: {watch_hours}"},
+        )
+    )
+    st.caption("Alt text: Bubble map showing total watch hours per region.")
 
 st.markdown("---")
 
-#---------- Bottom row: Summary + Top-10 Table ----------
+#Bottom Row – Summary + Top10 Table
+#-----------------------------------------------------------
 left2, right2 = st.columns([1.4, 1.0])
 
 with left2:
@@ -139,15 +180,15 @@ with left2:
     top_genre_min = int(gsum.iloc[0])
     peak_day = daily.loc[daily["watch_minutes"].idxmax(), "day"]
     st.markdown(
-        f"- **Top genre**: **{top_genre_name}** with **{top_genre_min} minutes** in the selected range.\n"
-        f"- **Peak day**: **{peak_day}**.\n"
-        f"- **Active subscribers**: **{active_users}**."
+        f"- **Top genre:** **{top_genre_name}** with **{top_genre_min} minutes** total\n"
+        f"- **Peak day:** **{peak_day}**\n"
+        f"- **Active subscribers:** **{active_users}**"
     )
-    st.caption("Alt text: Text panel summarizing key takeaways from filters.")
+    st.caption("Alt text: Text panel summarizing the top genre, peak day, and user count.")
 
 with right2:
     st.subheader("Top10 Show Table")
-    #With tiny sample we fake “show” as genre & user
+    #Placeholder grouping
     top10 = (
         f.groupby(["genre", "user_id"])["watch_time_minutes"]
         .sum()
@@ -157,13 +198,14 @@ with right2:
         .rename(columns={"watch_time_minutes": "watch_minutes"})
     )
     st.dataframe(top10, use_container_width=True)
-    st.caption("Alt text: Table of the top items by watch minutes for the current filters.")
+    st.caption("Alt text: Table of the top items by watch minutes for the selected filters.")
 
-#---------- Accessibility notes ----------
+#Accessibility Notes
+#-----------------------------------------------------------
 with st.expander("Accessibility & labeling notes"):
     st.write(
-        "- Charts have descriptive titles, axis labels, and units.\n"
-        "- Captions above serve as alt text.\n"
-        "- Values are visible via labels/tooltips (not color-only encoding).\n"
-        "- Layout mirrors the submitted paper prototype."
+        "- All charts and metrics include clear titles and captions.\n"
+        "- Captions double as alt text for accessibility.\n"
+        "- Color is never the only encoding; text labels show values.\n"
+        "- Layout matches the submitted wireframe (filters → KPIs → visuals → summary)."
     )
